@@ -1,71 +1,26 @@
 import React, { useRef, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import styled from 'styled-components';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRightLeft, Trophy } from 'lucide-react';
 
 import { capitalize } from './utils';
-import { Button } from './styles';
-
-const Popup = styled.div`
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  color: #006400;
-  padding: 1rem 2rem;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  text-align: center;
-  z-index: 1000;
-  animation: popin 1s ease-out;
-
-  @keyframes popin {
-    0% {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0.5);
-    }
-    100% {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-    }
-  }
-`;
-
-const ButtonsContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
-`;
+import { RiskEntry } from './types';
 
 interface Props {
-  participants: string[];
+  participants: RiskEntry[];
 }
 
 const colors = [
-  '#CC4629', // Darker vibrant orange
-  '#CC9A29', // Darker bright yellow
-  '#B2CC29', // Darker light green-yellow
-  '#5ECC29', // Darker bright green
-  '#29CC46', // Darker bright teal-green
-  '#29CC99', // Darker turquoise
-  '#2985CC', // Darker sky blue
-  '#293FCC', // Darker bright blue
-  '#4629CC', // Darker purple
-  '#9929CC', // Darker violet
-  '#CC2981', // Darker hot pink
-  '#CC2929', // Darker red
-  '#CC5929', // Darker coral
-  '#CC9529', // Darker gold
-  '#B2CC29', // Darker lime green
-  '#66CC29', // Darker olive green
-  '#29CC5F', // Darker mint green
-  '#29CC91', // Darker pale turquoise
-  '#298ECC', // Darker deep sky blue
-  '#4A29CC', // Darker royal blue
-  '#8429CC', // Darker medium purple
-  '#CC298F', // Darker fuchsia
-  '#CC294F', // Darker hot pink
+  '#0f3d91',
+  '#1e5bb8',
+  '#0c6b8f',
+  '#a36b00',
+  '#c48b18',
+  '#6b4f00',
+  '#144e75',
+  '#123c63',
+  '#7a5410',
+  '#b7791f',
 ];
 
 export const Wheel: React.FC<Props> = ({ participants }) => {
@@ -75,7 +30,7 @@ export const Wheel: React.FC<Props> = ({ participants }) => {
     'clockwise' | 'counterclockwise'
   >('clockwise');
   const [showPopup, setShowPopup] = useState(false);
-  const [popupWinner, setPopupWinner] = useState<string | null>(null);
+  const [popupWinner, setPopupWinner] = useState<RiskEntry | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const numSectors = participants.length;
@@ -102,10 +57,31 @@ export const Wheel: React.FC<Props> = ({ participants }) => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
     const radius = canvas.width / 2;
-    const sliceAngle = (2 * Math.PI) / numSectors;
 
-    // Clear previous drawing
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (numSectors === 0) {
+      ctx.fillStyle = '#081224';
+      ctx.beginPath();
+      ctx.arc(radius, radius, radius - 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.font = '700 20px Space Grotesk, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Add risks to spin the wheel', radius, radius - 6);
+      ctx.font = '400 14px DM Sans, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillText('Your DECA PMCD entries will appear here.', radius, radius + 22);
+      return;
+    }
+
+    const sliceAngle = (2 * Math.PI) / numSectors;
+    ctx.save();
     ctx.translate(radius, radius);
     ctx.rotate(-rotation * (Math.PI / 180));
 
@@ -120,39 +96,102 @@ export const Wheel: React.FC<Props> = ({ participants }) => {
       const color = darkenColor(colors[i % colors.length], 30);
       ctx.fillStyle = color;
       ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255, 230, 180, 0.22)';
+      ctx.stroke();
 
-      // Draw the name in the sector
+      // Draw the risk title in the sector.
       ctx.save();
       ctx.rotate((startAngle + endAngle) / 2);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'white';
-      ctx.font = '16px Arial';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.font = '700 15px Space Grotesk, sans-serif';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       ctx.shadowOffsetX = 1;
       ctx.shadowOffsetY = 1;
       ctx.shadowBlur = 3;
-      ctx.fillText(capitalize(participants[i]) || '', radius * 0.5, 0);
+      wrapText(ctx, participants[i]?.title || '', radius * 0.56, 0, 90, 18);
       ctx.restore();
     }
 
-    ctx.rotate(rotation * (Math.PI / 180)); // Reset rotation
-    ctx.translate(-radius, -radius);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(radius, radius);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 0.18, 0, Math.PI * 2);
+    ctx.fillStyle = '#081224';
+    ctx.fill();
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.stroke();
+    ctx.fillStyle = '#f8fafc';
+    ctx.textAlign = 'center';
+    ctx.font = '700 14px Space Grotesk, sans-serif';
+    ctx.fillText('DECA', 0, -4);
+    ctx.font = '600 10px Space Grotesk, sans-serif';
+    ctx.fillStyle = 'rgba(248,250,252,0.8)';
+    ctx.fillText('PMCD', 0, 12);
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(radius, radius, radius - 2, 0, Math.PI * 2);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.7)';
+    ctx.stroke();
+    ctx.restore();
 
     // Draw the static indicator
-    const indicatorLength = 20;
-    const indicatorWidth = 10;
+    const indicatorLength = 30;
+    const indicatorWidth = 24;
     ctx.save();
-    ctx.translate(canvas.width, canvas.height / 2);
+    ctx.translate(canvas.width - 2, canvas.height / 2);
     ctx.beginPath();
-    ctx.moveTo(-indicatorLength, -indicatorWidth / 2);
+    ctx.moveTo(-indicatorLength, 0);
     ctx.lineTo(0, -indicatorWidth / 2);
     ctx.lineTo(0, indicatorWidth / 2);
-    ctx.lineTo(-indicatorLength, indicatorWidth / 2);
     ctx.closePath();
-    ctx.fillStyle = 'red';
+    ctx.fillStyle = '#fbbf24';
     ctx.fill();
+    ctx.strokeStyle = '#fff7ed';
+    ctx.lineWidth = 2;
+    ctx.stroke();
     ctx.restore();
+  };
+
+  const wrapText = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number,
+  ) => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    words.forEach((word) => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    });
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    const startY = y - ((lines.length - 1) * lineHeight) / 2;
+
+    lines.slice(0, 3).forEach((line, index) => {
+      ctx.fillText(line, x, startY + index * lineHeight);
+    });
   };
 
   const startSpin = () => {
@@ -203,7 +242,7 @@ export const Wheel: React.FC<Props> = ({ participants }) => {
     const normalizedRotation = ((finalRotation % 360) + 360) % 360;
     const winningSector = Math.floor(normalizedRotation / sliceAngle);
 
-    setPopupWinner(participants[winningSector]);
+    setPopupWinner(participants[winningSector] || null);
     setShowPopup(true);
   };
 
@@ -230,33 +269,99 @@ export const Wheel: React.FC<Props> = ({ participants }) => {
   };
 
   return (
-    <div>
-      <canvas
-        ref={canvasRef}
-        width={400}
-        height={400}
-        style={{ borderRadius: '50%', border: '2px solid black' }}
-      />
-      <ButtonsContainer>
-        <Button
-          onClick={changeSpinDirection}
-          disabled={participants.length === 0 || spinning}
-        >
-          {capitalize(spinDirection)}
-        </Button>
-        <Button
-          onClick={startSpin}
-          disabled={participants.length === 0 || spinning}
-        >
-          Spin
-        </Button>
-      </ButtonsContainer>
-      {showPopup && popupWinner && (
-        <Popup>
-          <h2>Congratulations!</h2>
-          <h3>{capitalize(popupWinner)}</h3>
-        </Popup>
-      )}
-    </div>
+    <section className="rounded-[1.9rem] border border-amber-200/10 bg-slate-950/75 p-6 shadow-2xl backdrop-blur-xl">
+      <div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300/80">
+            Selection
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold text-white">
+            Spin the wheel
+          </h2>
+        </div>
+        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/60">
+          {participants.length} active {participants.length === 1 ? 'risk' : 'risks'}
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-[1.75rem] border border-amber-200/10 bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.12),transparent_24%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,1))] p-4 sm:p-6">
+        <div className="mx-auto flex max-w-[460px] flex-col items-center">
+          <div className="rounded-full bg-[radial-gradient(circle,rgba(251,191,36,0.18),transparent_62%)] p-4">
+          <canvas
+            ref={canvasRef}
+            width={400}
+            height={400}
+            className="aspect-square w-full max-w-[400px] rounded-full border-2 border-amber-200/10 shadow-[0_0_50px_rgba(251,191,36,0.12)]"
+          />
+          </div>
+
+          <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={changeSpinDirection}
+              disabled={participants.length === 0 || spinning}
+              className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 text-sm font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ArrowRightLeft className="h-4 w-4" />
+              {capitalize(spinDirection)}
+            </button>
+            <button
+              type="button"
+              onClick={startSpin}
+              disabled={participants.length === 0 || spinning}
+              className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-gradient-to-r from-cyan-400 to-orange-300 px-5 text-sm font-semibold uppercase tracking-[0.18em] text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {spinning ? 'Spinning...' : 'Spin'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {showPopup && popupWinner && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4 backdrop-blur-md"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-slate-950/95 p-6 shadow-2xl"
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+            >
+              <div className="flex items-center gap-3 text-cyan-200">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-300/10 text-amber-200">
+                  <Trophy className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300/80">
+                    Selected Risk
+                  </p>
+                  <h3 className="mt-1 text-2xl font-semibold text-white">
+                    {popupWinner.title}
+                  </h3>
+                </div>
+              </div>
+
+              {popupWinner.detail && (
+                <p className="mt-5 text-base leading-8 text-slate-200">
+                  {popupWinner.detail}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowPopup(false)}
+                className="mt-6 inline-flex rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+              >
+                Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
   );
 };

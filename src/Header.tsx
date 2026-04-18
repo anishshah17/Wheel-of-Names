@@ -14,6 +14,6 @@ const HeaderContainer = styled.header`
 
 export const Header: FC = () => (
   <HeaderContainer>
-    <h1>Wheel of Names</h1>
+    <h1>DECA PMCD Risk Wheel</h1>
   </HeaderContainer>
 );
